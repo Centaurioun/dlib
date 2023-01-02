@@ -1,0 +1,31 @@
+name: SonarCloud
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  build:
+    name: Build and analyze
+    runs-on: macos-latest
+    env:
+      BUILD_WRAPPER_OUT_DIR: bw-output # Directory where build-wrapper output will be placed
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Install sonar-scanner and build-wrapper
+        uses: SonarSource/sonarcloud-github-c-cpp@v1
+      - name: Run build-wrapper
+        run: |
+          build-wrapper-macosx-x86 --out-dir bw-output ninja
+      - name: Run sonar-scanner
+        env:
+          GITHUB_TOKEN: SONAR_GITHUB_TOKEN
+          SONAR_TOKEN: SONAR_TOKEN
+        run: |
+          sonar-scanner --define sonar.cfamily.build-wrapper-output="bw-output"
+                        --define sonar.cfamily.cache.enabled=true
+                        --define sonar.cfamily.cache.path="$HOME/.sonar/cache"
+                        --define sonar.cfamily.cache.serverUrl="https://sonarcloud.io"
